@@ -22,6 +22,7 @@
       <button type="submit">Unirse a la partida</button>
     </form>
   </div>
+  <div id="mensajeFinal" style="display:none; background:#f8f8f8; padding:10px; border-radius:6px; margin-top:10px; white-space:pre-line;"></div>
 
   <!-- Sección de juego -->
   <div id="partida">
@@ -29,9 +30,13 @@
     <p id="jugador"></p>
     <input type="hidden" id="jugadorId" />
     <div id="estado"></div>
+    
     <button id="btnPedir">Pedir</button>
     <button id="btnPlantar">Plantar</button>
-    <button id="btnRefrescar">Refrescar</button>
+    <button id="btnIniciar">Iniciar Partida</button>
+    <button id="btnReiniciar">Reiniciar Partida</button>
+
+
   </div>
 
   <script>
@@ -40,13 +45,15 @@
     const estado = document.getElementById('estado');
     const jugadorTexto = document.getElementById('jugador');
     const jugadorIdInput = document.getElementById('jugadorId');
+    let nombreJugadorGlobal = "";
+    let intervaloEstado = null;
 
     // Al enviar el formulario
     document.getElementById('formUnirse').addEventListener('submit', async e => {
       e.preventDefault();
-      const nombre = e.target.nombre.value.trim();
+       const nombre = e.target.nombre.value.trim();
       if (!nombre) return alert("Escribe tu nombre");
-
+       nombreJugadorGlobal = nombre;
       try {
         const res = await fetch(`/unirse-partida?nombre=${encodeURIComponent(nombre)}`);
         const data = await res.json();
@@ -55,25 +62,88 @@
         // Guardar ID en el input oculto
         jugadorIdInput.value = data.id;
         jugadorTexto.innerText = `Jugador: ${data.jugador}`;
-
+        
         // Cambiar de vista
         inicio.style.display = 'none';
         partida.style.display = 'block';
 
         // Mostrar estado inicial
         actualizarEstado();
+        iniciarAutoRefresco()
       } catch (err) {
         alert(err.message);
       }
     });
+    // Arranca el intervalo cuando se une a la partida
+        function iniciarAutoRefresco() {
+          if (intervaloEstado) clearInterval(intervaloEstado);
+          intervaloEstado = setInterval(actualizarEstado, 200); 
+        }
 
+        // Lo detiene (por ejemplo al reiniciar)
+        function detenerAutoRefresco() {
+          if (intervaloEstado) {
+            clearInterval(intervaloEstado);
+            intervaloEstado = null;
+          }
+        }
     // Función para actualizar estado del juego
-    async function actualizarEstado() {
-      const id = jugadorIdInput.value;
-      const res = await fetch(`/estado?id=${encodeURIComponent(id)}`);
-      const data = await res.json();
-      estado.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+   async function actualizarEstado() {
+  try {
+    //  Verificar si se está reiniciando
+    const estadoRes = await fetch('/estado-partida');
+    const estadoData = await estadoRes.json();
+
+    if (estadoData.reiniciando) {
+      console.log("Reiniciando partida...");
+      location.reload();
+      return;
     }
+
+    //  Consultar estado general del juego
+    const id = jugadorIdInput.value;
+    const res = await fetch(`/estado?id=${encodeURIComponent(id)}`);
+    const data = await res.json();
+
+    //  Si se debe recargar
+    if (data.reload) {
+      alert("La partida se reinició. Se recargará la página...");
+      location.reload();
+      return;
+    }
+
+    //  Si hay mensaje final (del crupier o sistema)
+    
+    if (data.mensaje) {
+      console.log("Mensaje final recibido desde /estado");
+      const mensajeFinalDiv = document.getElementById('mensajeFinal');
+      mensajeFinalDiv.innerText = data.mensaje;
+      mensajeFinalDiv.style.display = 'block';
+      return; // No seguimos actualizando otras partes (opcional)
+    }
+
+    // 5️⃣ Actualizar visualización general del estado
+    estado.innerHTML = `
+      <pre>${JSON.stringify(data, null, 2)}</pre>
+      <p><strong>Turno de:</strong> ${data.jugador_activo}</p>
+    `;
+
+  } catch (err) {
+    console.error("Error al actualizar estado:", err);
+  }
+}
+    async function reiniciarPartida(nombreJugador) {
+      detenerAutoRefresco();
+      const res = await fetch(`/reiniciar-partida?nombre=${encodeURIComponent(nombreJugador)}`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      alert(data.msg || data.error);
+      if (data.ok) {
+        location.reload();
+      }
+    }
+
     // Botones
       document.getElementById('btnPedir').onclick = async () => {
         const id = jugadorIdInput.value;
@@ -87,21 +157,40 @@
           alert(err.message);
         }
       };
+      document.getElementById('btnReiniciar').onclick = async () => {
+        reiniciarPartida(nombreJugadorGlobal);
+        actualizarEstado();
+      };
+
 
       document.getElementById('btnPlantar').onclick = async () => {
         const id = jugadorIdInput.value;
         try {
           const res = await fetch(`/accion?accion=plantar&id=${encodeURIComponent(id)}`);
           const data = await res.json();
+          if (data.mensaje) {
+            console.log("se paso por aqui")
+            const mensajeFinalDiv = document.getElementById('mensajeFinal');
+            mensajeFinalDiv.innerText = data.mensaje;
+            mensajeFinalDiv.style.display = 'block';
+          }
 
           if (!res.ok) throw new Error(data.error || "Error al ejecutar acción");
           actualizarEstado();
         } catch (err) {
           alert(err.message);
         }
+        
+
+      };
+      document.getElementById('btnIniciar').onclick = async () => {
+        const res = await fetch('/iniciar-partida');
+        const data = await res.json();
+        alert(data.msg || data.error);
+        actualizarEstado();
       };
 
-      document.getElementById('btnRefrescar').onclick = actualizarEstado;
+
   </script>
 </body>
 </html>

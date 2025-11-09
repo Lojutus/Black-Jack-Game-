@@ -8,6 +8,8 @@
 
 // ----- Estado global (una sola partida en memoria) -----
 static std::unique_ptr<ControladorJuego> partidaGlobal = nullptr;
+static bool reiniciandoPartida = false;
+std::string jsonFinal = "";
 
 // ----- Helpers -----
 static std::string leerArchivo(const std::string &ruta) { // abre un archivo y devuelve su contenrido en un string
@@ -17,7 +19,30 @@ static std::string leerArchivo(const std::string &ruta) { // abre un archivo y d
     ss << f.rdbuf();
     return ss.str();
 }
-
+std::string escapeJsonString(const std::string &input) {
+    std::string output;
+    for (char c : input) {
+        switch (c) {
+            case '\"': output += "\\\""; break;
+            case '\\': output += "\\\\"; break;
+            case '\b': output += "\\b"; break;
+            case '\f': output += "\\f"; break;
+            case '\n': output += "\\n"; break;
+            case '\r': output += "\\r"; break;
+            case '\t': output += "\\t"; break;
+            default:
+                if ('\x00' <= c && c <= '\x1f') {
+                    // control character: represent as \u00XX
+                    char buf[7];
+                    snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    output += buf;
+                } else {
+                    output += c;
+                }
+        }
+    }
+    return output;
+}
 static std::string generarIdSimple() { // dos nuemros aleatorios concatenados 
     // id simple, suficiente para demo 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
@@ -41,31 +66,12 @@ static std::string generarIdJugador() {
     return id;
 }
 
-static std::string getCookieValue(const httplib::Request &req, const std::string &name) {
-    auto it = req.headers.find("Cookie");
-    if (it == req.headers.end()) return "";
-    const std::string &cookie = it->second;
-    std::string key = name + "=";
-    size_t pos = cookie.find(key);
-    if (pos == std::string::npos) return "";
-    pos += key.size();
-    size_t end = cookie.find(';', pos);
-    if (end == std::string::npos) end = cookie.size();
-    return cookie.substr(pos, end - pos);
-}
 
-static std::string vectorIntsToJsonArray(const std::vector<int>& v) {
-    std::string s = "[";
-    for (size_t i = 0; i < v.size(); ++i) {
-        s += std::to_string(v[i]);
-        if (i + 1 < v.size()) s += ",";
-    }
-    s += "]";
-    return s;
-}
 
 // ----- Rutas -----
 void definirRutas(httplib::Server &svr) {
+    
+
 
 
         // Servir index.html
@@ -108,6 +114,8 @@ void definirRutas(httplib::Server &svr) {
 
         // Ejemplo: GET /crear-partida?nombre=Jose
         svr.Get("/unirse-partida", [](const httplib::Request &req, httplib::Response &res) {
+           
+
             // 1. Obtener nombre
             std::string nombre;
             try { nombre = req.get_param_value("nombre"); } catch(...) { nombre = ""; }
@@ -121,6 +129,12 @@ void definirRutas(httplib::Server &svr) {
             // 2. Crear partida si no existe
             if (!partidaGlobal)
                 partidaGlobal = std::make_unique<ControladorJuego>();
+             // Si la partida esta corriendo no puede jugar
+            if (partidaGlobal->juegoActivo.partidaActiva) {
+            res.status = 400;
+            res.set_content("{\"error\":\"partida iniciada no se puede entrar\"}", "application/json");
+            return;
+        }
 
             // 3. Verificar si el jugador ya existe
             bool jugadorExiste = false;
@@ -145,7 +159,17 @@ void definirRutas(httplib::Server &svr) {
             jugador.setId(idJugador); // necesitas agregar este campo + setter en Jugador
 
             partidaGlobal->juegoActivo.addJugador(jugador);
+            int i = 0;
+            std::string indice = "";
+            for(const auto& jugadorI : partidaGlobal->juegoActivo.getJugadores() ){
+                if(jugadorI.getNombre() == jugador.getNombre()){
+                    indice = std::to_string(i);
+                }
+                i++;
+            }
+            nombre = indice + " " + nombre;
 
+            jsonFinal = "";
             // 5. Devolver respuesta
             std::string json =
                 "{"
@@ -154,23 +178,118 @@ void definirRutas(httplib::Server &svr) {
                 "\"jugador\":\"" + nombre + "\","
                 "\"id\":\"" + idJugador + "\""
                 "}";
-            
+            reiniciandoPartida = false;
             res.status = 200;
             res.set_content(json, "application/json");
         });
+        svr.Get("/estado-partida", [](const httplib::Request& req, httplib::Response& res) {
+            std::string json = "{\"reiniciando\":";
+            json += reiniciandoPartida ? "true" : "false";
+            json += "}";
+            res.set_content(json, "application/json");
+        });
+        svr.Post("/reiniciar-partida", [](const httplib::Request &req, httplib::Response &res) {
+                
+                if (!partidaGlobal) {
+                    res.status = 400;
+                    res.set_content("{\"ok\":false, \"error\":\"No hay partida activa.\"}", "application/json");
+                    return;
+                }
+
+                // Copia segura de los jugadores (no referencia)
+                auto jugadores = partidaGlobal->juegoActivo.getJugadores();
+
+                if (jugadores.empty()) {
+                    res.status = 400;
+                    res.set_content("{\"ok\":false, \"error\":\"No hay jugadores en la partida.\"}", "application/json");
+                    return;
+                }
+
+                std::string nombreJugador;
+                if (req.has_param("nombre")) {
+                    nombreJugador = req.get_param_value("nombre");
+                } else {
+                    res.status = 400;
+                    res.set_content("{\"ok\":false, \"error\":\"Falta el parámetro 'nombre'.\"}", "application/json");
+                    return;
+                }
+
+                const std::string nombreCreador = jugadores[0].getNombre();
+
+                if (nombreJugador != nombreCreador) {
+                    res.status = 403;
+                    res.set_content("{\"ok\":false, \"error\":\"Solo el creador (" + nombreCreador + ") puede reiniciar la partida.\"}", "application/json");
+                    return;
+                }
+                reiniciandoPartida = true;
+                try
+                {
+                    partidaGlobal.reset();
+                partidaGlobal = std::make_unique<ControladorJuego>();
+
+                }
+                catch(const std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                }
+            
+                
+                res.status = 200;
+                res.set_content("{\"ok\":true, \"msg\":\"Partida reiniciada correctamente.\"}", "application/json");
+                
+            });
+
+
 
 
     // Acción del jugador: ?accion=pedir  o ?accion=plantar
     // Ejemplo: GET /accion?accion=pedir
+    svr.Get("/iniciar-partida", [](const httplib::Request &req, httplib::Response &res) {
+    // 1 Crear el controlador si no existe
+    if (!partidaGlobal){
+        partidaGlobal = std::make_unique<ControladorJuego>();}
+        
+    // 2 Verificar si ya hay una partida activa
+    if (partidaGlobal->juegoActivo.partidaActiva) {
+        res.status = 400;
+        res.set_content(
+            "{\"error\":\"La partida ya está iniciada, no se puede reiniciar.\"}",
+            "application/json"
+        );
+        return;
+    }
+
+    // 3 Iniciar la partida
+    partidaGlobal->juegoActivo.iniciarPartida();
+
+    // 4 Confirmar al cliente
+    res.status = 200;
+    res.set_content(
+        "{\"ok\":true, \"msg\":\"La partida ha sido iniciada correctamente.\"}",
+        "application/json"
+    );
+});
 
     //Aqui se configuran las acciones 
 
    svr.Get("/accion", [](const httplib::Request &req, httplib::Response &res) {
+
         if (!partidaGlobal) {
             res.status = 400;
             res.set_content("{\"error\":\"no hay partida\"}", "application/json");
             return;
         }
+         if (!partidaGlobal->juegoActivo.partidaActiva) {
+            res.status = 400;
+            res.set_content("{\"error\":\"partida no iniciada\"}", "application/json");
+            return;
+        }
+        if (reiniciandoPartida) {
+            res.status = 409; // o 503
+            res.set_content("{\"reload\":true}", "application/json");
+            return;
+        }
+
 
         std::string accion, idJugador;
         try { accion = req.get_param_value("accion"); } catch(...) { accion = ""; }
@@ -195,9 +314,35 @@ void definirRutas(httplib::Server &svr) {
 
         // Ejecutar acción
         if (accion == "pedir") {
+
             partidaGlobal->enviarOrden('p');
+
         } else if (accion == "plantar") {
-            partidaGlobal->cambiarJugador();
+            
+            if( !partidaGlobal->cambiarJugador()){
+                try{
+                Mazo mazo = partidaGlobal->juegoActivo.getMazo();
+                std::string respuesta = partidaGlobal->juegoActivo.jugar(mazo);
+                respuesta = respuesta +  partidaGlobal->juegoActivo.evaluarRonda();
+                std::string json = "{\"mensaje\":\"" + escapeJsonString(respuesta) + "\"}";
+                jsonFinal = json;
+                res.set_content(json, "application/json");
+                partidaGlobal->juegoActivo.partidaActiva = false;
+                
+                return;
+            
+            }
+                
+                
+                catch (...) {
+                res.status = 500;
+                 
+                res.set_content("{\"error\":\"la partida fue reiniciada durante la consulta\"}", "application/json");
+                return;
+            }
+                
+            }
+
         } else {
             res.status = 400;
             res.set_content("{\"error\":\"accion no reconocida\"}", "application/json");
@@ -206,12 +351,36 @@ void definirRutas(httplib::Server &svr) {
 
         // Devolver estado
         std::string manos = partidaGlobal->juegoActivo.mostrarManoParcial();
-        auto puntajes = partidaGlobal->juegoActivo.puntajesJugadores();
+        auto &jugadores = partidaGlobal->juegoActivo.getJugadores();
+        const std::string nombrejugador = jugadores[partidaGlobal->getJuagadorActivo()].getNombre();
+
+        // Construir string de manos (escapando saltos de línea y comillas)
+        std::string manosJugadores = "[";
+        for (size_t i = 0; i < jugadores.size(); ++i) {
+            std::string mano = "player " +std::to_string(i) + " " + jugadores[i].mostrarMano();
+
+            // Escapar comillas dobles y saltos de línea
+            size_t pos = 0;
+            while ((pos = mano.find("\"", pos)) != std::string::npos) {
+                mano.replace(pos, 1, "\\\"");
+                pos += 2;
+            }
+            while ((pos = mano.find("\n", pos)) != std::string::npos) {
+                mano.replace(pos, 1, "\\n");
+                pos += 2;
+            }
+
+            manosJugadores += "\"" + mano + "\"";
+            if (i < jugadores.size() - 1) manosJugadores += ",";
+        }
+        manosJugadores += "]";
 
         std::string json = "{";
-        json += "\"manos\":\"" + manos + "\",";
-        json += "\"puntajes\":" + vectorIntsToJsonArray(puntajes);
+        json += "\"mano_visible_crupier\":\"" + manos + "\",";
+        json += "\"manos_jugadores\":" + manosJugadores + ",";
+        json += "\"jugador_activo\":\"" + nombrejugador + "\"";
         json += "}";
+
         res.set_content(json, "application/json");
     });
 
@@ -223,13 +392,57 @@ void definirRutas(httplib::Server &svr) {
             res.set_content("{\"error\":\"no hay partida activa\"}", "application/json");
             return;
         }
-        std::string manos = partidaGlobal->juegoActivo.mostrarManoParcial();
-        auto puntajes = partidaGlobal->juegoActivo.puntajesJugadores();
-        std::string json = "{";
-        json += "\"manos\":\"" + manos + "\",";
-        json += "\"puntajes\":" + vectorIntsToJsonArray(puntajes);
-        json += "}";
-        res.set_content(json, "application/json");
+        if (reiniciandoPartida) {
+                res.status = 409; // o 503
+                res.set_content("{\"reload\":true}", "application/json");
+                return;
+        }
+        if (!jsonFinal.empty()) {
+            res.set_content(jsonFinal, "application/json");
+            return;
+        } 
+
+        
+        try{
+             std::string manos = partidaGlobal->juegoActivo.mostrarManoParcial();
+            auto &jugadores = partidaGlobal->juegoActivo.getJugadores();
+            const std::string nombrejugador = jugadores[partidaGlobal->getJuagadorActivo()].getNombre();
+
+            // Construir string de manos (escapando saltos de línea y comillas)
+            std::string manosJugadores = "[";
+            for (size_t i = 0; i < jugadores.size(); ++i) {
+                std::string mano = "player " +std::to_string(i) + " " + jugadores[i].mostrarMano();
+
+                // Escapar comillas dobles y saltos de línea
+                size_t pos = 0;
+                while ((pos = mano.find("\"", pos)) != std::string::npos) {
+                    mano.replace(pos, 1, "\\\"");
+                    pos += 2;
+                }
+                while ((pos = mano.find("\n", pos)) != std::string::npos) {
+                    mano.replace(pos, 1, "\\n");
+                    pos += 2;
+                }
+
+                manosJugadores += "\"" + mano + "\"";
+                if (i < jugadores.size() - 1) manosJugadores += ",";
+            }
+            manosJugadores += "]";
+
+            std::string json = "{";
+            json += "\"mano_visible_crupier\":\"" + manos + "\",";
+            json += "\"manos_jugadores\":" + manosJugadores + ",";
+            json += "\"jugador_activo\":\"" + nombrejugador + "\"";
+            json += "}";
+
+            res.set_content(json, "application/json");
+        }
+        catch (...) {
+        res.status = 500;
+        res.set_content("{\"error\":\"la partida fue reiniciada durante la consulta\"}", "application/json");
+    }
+       
+        
     });
 
     // Reiniciar / nueva partida (GET /nueva-partida)

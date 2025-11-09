@@ -52,11 +52,13 @@ std::vector<int> Juego::puntajesJugadores(){
     return resultado;
 }
 
-void Juego::evaluarRonda() {
+std::string Juego::evaluarRonda() {
+    std::string resultado = "";
     for (auto& jugador : jugadores) {
         
-        determinarGanador(jugador);
+        resultado = resultado +  determinarGanador(jugador) + "\n" ;
     }
+    return resultado;
     
 }
 

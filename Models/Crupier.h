@@ -25,8 +25,8 @@ public:
     void repartirInicial(Mazo& mazo, Jugador& jugador);
     std::string mostrarManoParcial() const;
     void repartirTusCartas(Mazo& mazo);
-    void determinarGanador(Jugador& jugador);
-    void jugar(Mazo& mazo); // sid evuelve true es que quiere seguir jugando 
+    std::string  determinarGanador(Jugador& jugador);
+    std::string jugar(Mazo& mazo); // sid evuelve true es que quiere seguir jugando 
     bool tieneAsBlando(const Mano& mano);
 };
 

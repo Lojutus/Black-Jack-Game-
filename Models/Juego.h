@@ -24,7 +24,7 @@ public:
     Juego();
 
     void iniciarPartida();
-    void evaluarRonda();
+    std::string evaluarRonda();
     void pagoVictoria(Jugador& jugador);
     void nuevaPartida();
     void terminarJuego();
