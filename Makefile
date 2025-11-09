@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -g -O0
 LDFLAGS = -lcurl
 TARGET = main
-SRCS = $(wildcard *.cpp)
+SRCS = $(shell find . -name '*.cpp' -not -path './tests/*')
 
 all: $(TARGET)
 

@@ -33,5 +33,5 @@
     "--cap-add=SYS_PTRACE",
     "--security-opt=seccomp=unconfined"
   ],
-  "forwardPorts": [2345]
+  "forwardPorts": [2345,8080]
 }

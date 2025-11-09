@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blackjack</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
+    #partida { display: none; margin-top: 20px; }
+    pre { background: #eee; padding: 10px; border-radius: 6px; }
+    button { margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Bienvenido al Blackjack</h1>
+
+  <!-- Sección de inicio -->
+  <div id="inicio">
+    <form id="formUnirse">
+      <label>Tu nombre:
+        <input name="nombre" required />
+      </label>
+      <button type="submit">Unirse a la partida</button>
+    </form>
+  </div>
+
+  <!-- Sección de juego -->
+  <div id="partida">
+    <h2>Partida en curso</h2>
+    <p id="jugador"></p>
+    <input type="hidden" id="jugadorId" />
+    <div id="estado"></div>
+    <button id="btnPedir">Pedir</button>
+    <button id="btnPlantar">Plantar</button>
+    <button id="btnRefrescar">Refrescar</button>
+  </div>
+
+  <script>
+    const inicio = document.getElementById('inicio');
+    const partida = document.getElementById('partida');
+    const estado = document.getElementById('estado');
+    const jugadorTexto = document.getElementById('jugador');
+    const jugadorIdInput = document.getElementById('jugadorId');
+
+    // Al enviar el formulario
+    document.getElementById('formUnirse').addEventListener('submit', async e => {
+      e.preventDefault();
+      const nombre = e.target.nombre.value.trim();
+      if (!nombre) return alert("Escribe tu nombre");
+
+      try {
+        const res = await fetch(`/unirse-partida?nombre=${encodeURIComponent(nombre)}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Error al unirse");
+
+        // Guardar ID en el input oculto
+        jugadorIdInput.value = data.id;
+        jugadorTexto.innerText = `Jugador: ${data.jugador}`;
+
+        // Cambiar de vista
+        inicio.style.display = 'none';
+        partida.style.display = 'block';
+
+        // Mostrar estado inicial
+        actualizarEstado();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    // Función para actualizar estado del juego
+    async function actualizarEstado() {
+      const id = jugadorIdInput.value;
+      const res = await fetch(`/estado?id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+      estado.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    }
+    // Botones
+      document.getElementById('btnPedir').onclick = async () => {
+        const id = jugadorIdInput.value;
+        try {
+          const res = await fetch(`/accion?accion=pedir&id=${encodeURIComponent(id)}`);
+          const data = await res.json();
+
+          if (!res.ok) throw new Error(data.error || "Error al ejecutar acción");
+          actualizarEstado();
+        } catch (err) {
+          alert(err.message);
+        }
+      };
+
+      document.getElementById('btnPlantar').onclick = async () => {
+        const id = jugadorIdInput.value;
+        try {
+          const res = await fetch(`/accion?accion=plantar&id=${encodeURIComponent(id)}`);
+          const data = await res.json();
+
+          if (!res.ok) throw new Error(data.error || "Error al ejecutar acción");
+          actualizarEstado();
+        } catch (err) {
+          alert(err.message);
+        }
+      };
+
+      document.getElementById('btnRefrescar').onclick = actualizarEstado;
+  </script>
+</body>
+</html>

@@ -8,9 +8,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Prepara el sistema e instala herramientas necesarias (incluye cmake para compilar gtest)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-    build-essential \
+  build-essential \
     cmake \
     git \
+  curl \
     gdb \
     gdbserver \
     ninja-build \
@@ -35,6 +36,12 @@ RUN if [ -d /usr/src/googletest ] ; then \
     elif [ -d /usr/src/gtest ] ; then \
       cd /usr/src/gtest && cmake . && make && cp -a lib/*.a /usr/lib/ || true ; \
     fi
+
+# Instala la cabecera single-file cpp-httplib (httplib.h) para poder usar #include <httplib.h>
+RUN mkdir -p /usr/local/include && \
+    curl -fsSL https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h -o /usr/local/include/httplib.h && \
+    chmod 644 /usr/local/include/httplib.h || \
+    (echo "Advertencia: no se pudo descargar httplib.h durante la construcción" )
 
 # Crear usuario no-root con UID (usado por devcontainer.json)
 RUN useradd -m -u ${UID} ${USER} \
