@@ -2,6 +2,14 @@
 #include <limits>
 #include "ControladorJuego.h"
 #include "MostrarInformacion.h"
+/* Link al repositorio: https://github.com/Lojutus/Black-Jack-Game- 
+Trabajo de :
+Integrantes: 
+Jhenyl Abrahan Ybañez Montilla – 2418114  
+José David Hurtado Gómez – 2519500  
+Juan Sebastián Duarte Quintero – 2516473  
+Santiago Torres Martínez - 2521423  
+*/
 int main() {
     std::cout << "=== Bienvenido al juego de Blackjack ===\n";
     // Creamos un jeugo
@@ -15,15 +23,7 @@ int main() {
     // Añadimos el jugador al juego
 
     juego.juegoActivo.addJugador(jugador);
-    /* Crear jugador
-    std::string nombre2;
-    std::cout << "Ingrese su nombre: ";
-    std::getline(std::cin, nombre);
-    Jugador jugador2(nombre);
-    // Añadimos el jugador al juego
-
-    juego.juegoActivo.addJugador(jugador2);
-   */
+    
     // inicializamos el juego
 
      juego.juegoActivo.iniciarPartida(); 
