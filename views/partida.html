@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Partida</title></head>
+<body>
+  <h1>Partida</h1>
+  <div id="estado"></div>
+  <button onclick="fetch('/accion?accion=pedir').then(r=>r.json()).then(update)">Pedir</button>
+  <button onclick="fetch('/accion?accion=plantar').then(r=>r.json()).then(update)">Plantar</button>
+  <button onclick="fetch('/estado').then(r=>r.json()).then(update)">Refrescar</button>
+
+  <script>
+    function update(data) {
+      document.getElementById('estado').innerText = JSON.stringify(data, null, 2);
+    }
+    // Autorefresh al abrir
+    fetch('/estado').then(r=>r.json()).then(update).catch(()=>{/*no hay partida*/});
+  </script>
+</body>
+</html>
