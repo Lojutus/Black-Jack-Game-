@@ -196,7 +196,7 @@ void definirRutas(httplib::Server &svr) {
                     return;
                 }
 
-                // Copia segura de los jugadores (no referencia)
+                /* Copia segura de los jugadores (no referencia)
                 auto jugadores = partidaGlobal->juegoActivo.getJugadores();
 
                 if (jugadores.empty()) {
@@ -220,12 +220,12 @@ void definirRutas(httplib::Server &svr) {
                     res.status = 403;
                     res.set_content("{\"ok\":false, \"error\":\"Solo el creador (" + nombreCreador + ") puede reiniciar la partida.\"}", "application/json");
                     return;
-                }
+                }*/
                 reiniciandoPartida = true;
                 try
                 {
                     partidaGlobal.reset();
-                partidaGlobal = std::make_unique<ControladorJuego>();
+                    partidaGlobal = std::make_unique<ControladorJuego>();
 
                 }
                 catch(const std::exception& e)

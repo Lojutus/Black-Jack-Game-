@@ -7,18 +7,18 @@ Crupier::Crupier() : Jugador("Crupier") {}
 void Crupier::barajarMazo(Mazo& mazo) {
     mazo.barajar();
 }
-void Crupier::repartirTusCartas(Mazo& mazo){
+void Crupier::repartirTusCartas(Mazo& mazo){ // esta funcion es para que el crupier se reparta sus dos cartas iniciales
     this->recibirCarta(mazo.repartirCarta());
     this->recibirCarta(mazo.repartirCarta());
 }
 
 
-void Crupier::repartirInicial(Mazo& mazo, Jugador& jugador) {
+void Crupier::repartirInicial(Mazo& mazo, Jugador& jugador) { // Reparte dos cartas al jugador que se le pasa por parametro
     jugador.recibirCarta(mazo.repartirCarta());
     jugador.recibirCarta(mazo.repartirCarta());
 }
 
-std::string Crupier::mostrarManoParcial() const {
+std::string Crupier::mostrarManoParcial() const {// muestra la mano parcial del crupier (solo la primera carta)
     if (mano.getCantidad() > 0) {
         std::string carta =  mano.mostrar().substr(0, mano.mostrar().find("|") + 1) ;
         return carta;
@@ -114,6 +114,7 @@ std::string Crupier::jugar(Mazo& mazo){
 
     int valorFinal = mano.calcularValor();
     respuesta = respuesta + "Crupier termina con: " + std::to_string(valorFinal) + ".\n \n";
+    respuesta = "El crupier comienza su turno...\n Crupier termina con: " + std::to_string(valorFinal) + ".\n \n"; // En la vercion web solo se muestra el resultado final
     std::cout << "Crupier termina con: " << valorFinal << "\n";
     return respuesta; 
 }
