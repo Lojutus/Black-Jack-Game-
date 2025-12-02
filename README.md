@@ -134,7 +134,11 @@ Esta clase representa la colección de cartas que posee un jugador o el crupier.
 ## Clase: ControladorJuego
 **Archivo:** `ControladorJuego.cpp`
 
-Esta clase parece actuar como el intermediario entre la lógica del juego (modelo) y las acciones del usuario.
+Es encargado de actualizar la vista y administrar las funciones del juego; Contiene juego activo:
+**enviarOrden:** Obtiene la orden de pedir "P" o dejar "D" y obtiene el mazo del jugador activo con el turno actual.
+**cambiarJugador:** Recorre el vector de jugadores, y asgina a jugador activo, la posición actual en el vector del jugador activo actual + 1, si al sumar a la posición uno, sale del rango del vector es que acabo la ronda
+**getJuagador:** obtiene la posición en el vector de jugadores del jugador que está activo.
+
 
 ### `ControladorJuego()`
 **Funcionalidad:** Constructor vacío, no realiza ninguna inicialización explícita.
@@ -147,13 +151,13 @@ Esta clase parece actuar como el intermediario entre la lógica del juego (model
 * Está envuelto en un `try...catch` que devuelve `0` (`false`) si ocurre alguna excepción.
 
 ### `int getJuagadorActivo()`
-**Funcionalidad:** Devuelve el índice (entero) del jugador que tiene el turno (`jugadorActivo`). (Nota: hay un error tipográfico en el nombre del método, dice "Juagador" en lugar de "Jugador").
+**Funcionalidad:** Devuelve el índice (entero) del jugador que tiene el turno (`jugadorActivo`).
 
 ### `bool cambiarJugador()`
-**Funcionalidad:** Intenta pasar el turno al siguiente jugador de la lista.
-* Intenta obtener al jugador en la posición `jugadorActivo + 1` de `juegoActivo`.
-* Si tiene éxito: Imprime el nombre del nuevo jugador, actualiza el índice `jugadorActivo` y retorna `1` (`true`). (Nota: `jugadorActivo =+ 1;` es un error tipográfico común; probablemente la intención era `jugadorActivo += 1;` o `jugadorActivo++;`. Tal como está, asigna el valor `1` a `jugadorActivo`).
-* Si falla (lanza `std::out_of_range`): Significa que era el último jugador. Captura la excepción, reinicia `jugadorActivo` a `0`, imprime "FIN DE LA RONDA" y retorna `0` (`false`) para indicar que la ronda terminó.
+   **Funcionalidad:** Pasa el turno al siguiente jugador de la lista.
+* Obtiene al jugador en la posición `jugadorActivo + 1` de `juegoActivo`.
+* Si existe la posición: Imprime el nombre del nuevo jugador, actualiza el índice `jugadorActivo` y retorna `1` (`true`).
+* Si la posición del vector no es parte del vector lanza `std::out_of_range` (Significa que era el último jugador). Captura la excepción, reinicia `jugadorActivo` a `0`, imprime "FIN DE LA RONDA" y retorna `0` (`false`) para indicar que la ronda terminó.
 
 ---
 
@@ -166,12 +170,11 @@ Esta clase se encarga de interactuar con la consola, mostrando información y pi
 **Funcionalidad:** Constructor vacío, no realiza ninguna inicialización.
 
 ### `void mostrarManoJugador(Mano& manoMostrar)`
-**Funcionalidad:** Recibe una referencia a un objeto `Mano`, llama al método `manoMostrar.mostrar()` y envía el `string` resultante a `std::cout` para imprimirlo en la consola.
+**Funcionalidad:** Recibe una referencia al objeto `Mano`, llama al método `Mano::Mostrar.mostrar()` e imprime el string resultante.
 
 ### `char pedirOrden()`
 **Funcionalidad:** Pide al usuario que elija entre pedir ('p') o dejar ('d').
 * Muestra el mensaje de solicitud en la consola.
-* Lee un `char` desde `std::cin`.
 * Comprueba si la elección es 'p' o 'd'.
 * Si es válida: Devuelve el carácter.
 * Si no es válida: Muestra un mensaje de error y se llama a sí misma (recursividad) para volver a pedir la orden hasta que el usuario ingrese una opción válida.
@@ -211,7 +214,7 @@ Esta clase representa a un participante del juego, sea el crupier o un jugador r
 **Funcionalidad:** Reinicia el estado del jugador para una nueva ronda. Llama a `mano.vaciar()` para limpiar las cartas y reinicia la `apuesta` a `0.0`.
 
 ### `std::string getNombre() const`
-**Funcionalidad:** Devuelve el nombre (`string`) del jugador.
+**Funcionalidad:** Devuelve el nombre del jugador.
 
 ### `double getApuesta() const`
 **Funcionalidad:** Devuelve el monto de la apuesta (`double`) actual.
@@ -224,7 +227,7 @@ Esta clase representa a un participante del juego, sea el crupier o un jugador r
 ## Clase: Crupier
 **Archivo:** `Crupier.cpp`
 
-Esta clase representa al crupier. Hereda de `Jugador` y añade lógicas específicas del repartidor.
+Esta clase representa al crupier. Hereda de `Jugador` y añade lógicas específicas del repartidor, es una clase abstracta, en tiempo de ejecución todos sus metodos son ejecutados por la clase juego.
 
 ### `Crupier()`
 **Funcionalidad:** Es el constructor. Llama al constructor de la clase base (`Jugador`) y le pasa "Crupier" como nombre fijo.
@@ -338,3 +341,4 @@ estando en la carpeta raíz del proyecto
 sudo chown -R $(whoami):$(whoami) .
 sudo chmod -R u+rw .
 ```
+
