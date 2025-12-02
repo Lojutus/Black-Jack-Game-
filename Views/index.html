@@ -3,193 +3,228 @@
 <head>
   <meta charset="utf-8">
   <title>Blackjack</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
-    #partida { display: none; margin-top: 20px; }
-    pre { background: #eee; padding: 10px; border-radius: 6px; }
-    button { margin-right: 10px; }
+    :root{--bg:#0f1724;--card:#0b1320;--muted:#9aa7b2;--accent:#ffd166;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: linear-gradient(180deg,#071020 0%, #071826 60%);
+      color:#e6eef6;
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:28px;box-sizing:border-box;margin:0;
+    }
+    .container{width:100%;max-width:900px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{margin:0;font-size:28px;letter-spacing:0.4px}
+    .sub{color:var(--muted);font-size:13px}
+
+    .card{background:linear-gradient(180deg,var(--card), rgba(6,12,20,0.7));padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,12,0.6);}
+    #inicio .card, #partida .card{margin-bottom:14px}
+
+    form label{display:block;color:var(--muted);margin-bottom:8px}
+    input[name="nombre"]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit}
+
+    .controls{margin-top:12px}
+    button{
+      background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--accent);padding:8px 12px;border-radius:8px;margin-right:8px;cursor:pointer;transition:all .15s ease;
+    }
+    button:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.4)}
+    button.ghost{background:transparent;color:var(--muted);border-color:rgba(255,255,255,0.04)}
+
+    #partida{display:none;margin-top:16px}
+    #jugador{font-weight:600;color:#fff}
+
+    .estado-card{white-space:pre-line;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;margin-top:12px;color:var(--muted);font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace}
+
+    #mensajeFinal{display:none;margin-top:12px;padding:10px;border-radius:8px;background:#072129;color:#b9f3e4}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
   </style>
 </head>
 <body>
-  <h1>Bienvenido al Blackjack</h1>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Blackjack</h1>
+        <div class="sub">Juego de cartas</div>
+      </div>
+    </header>
 
-  <!-- Sección de inicio -->
-  <div id="inicio">
-    <form id="formUnirse">
-      <label>Tu nombre:
-        <input name="nombre" required />
-      </label>
-      <button type="submit">Unirse a la partida</button>
-    </form>
-  </div>
-  <div id="mensajeFinal" style="display:none; background:#f8f8f8; padding:10px; border-radius:6px; margin-top:10px; white-space:pre-line;"></div>
+    <div id="inicio" class="card">
+      <form id="formUnirse">
+        <label>Tu nombre:
+          <input name="nombre" required autocomplete="name" />
+        </label>
+        <div class="controls">
+          <button type="submit">Unirse a la partida</button>
+        </div>
+      </form>
+    </div>
 
-  <!-- Sección de juego -->
-  <div id="partida">
-    <h2>Partida en curso</h2>
-    <p id="jugador"></p>
-    <input type="hidden" id="jugadorId" />
-    <div id="estado"></div>
+    <div id="mensajeFinal" class="card" ></div>
+
+    <div id="partida">
+      <div class="card">
+        <h2 style="margin-top:0;margin-bottom:6px">Partida en curso</h2>
+        <p id="jugador"></p>
+        <input type="hidden" id="jugadorId" />
+        <div id="estadoText" class="estado-card">Estado del juego aparecerá aquí...</div>
+
+        <div class="controls" style="margin-top:12px">
+          <button id="btnPedir">Pedir</button>
+          <button id="btnPlantar">Plantar</button>
+          <button id="btnIniciar" class="ghost">Iniciar Partida</button>
+          <button id="btnReiniciar" class="ghost">Reiniciar Partida</button>
+        </div>
+      </div>
+    </div>
+
     
-    <button id="btnPedir">Pedir</button>
-    <button id="btnPlantar">Plantar</button>
-    <button id="btnIniciar">Iniciar Partida</button>
-    <button id="btnReiniciar">Reiniciar Partida</button>
-
-
   </div>
 
   <script>
     const inicio = document.getElementById('inicio');
     const partida = document.getElementById('partida');
-    const estado = document.getElementById('estado');
+    const estadoText = document.getElementById('estadoText');
+    const mensajeFinalDiv = document.getElementById('mensajeFinal');
     const jugadorTexto = document.getElementById('jugador');
     const jugadorIdInput = document.getElementById('jugadorId');
     let nombreJugadorGlobal = "";
     let intervaloEstado = null;
 
-    // Al enviar el formulario
+    function formatDataAsText(obj, indent = 0) {
+      const pad = '  '.repeat(indent);
+      if (obj === null || obj === undefined) return pad + String(obj);
+      if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return pad + String(obj);
+      if (Array.isArray(obj)) {
+        if (obj.length === 0) return pad + '[]';
+        return obj.map((v, i) => {
+          if (typeof v === 'object') return pad + `- ${formatDataAsText(v, indent+1).trim()}`;
+          return pad + `- ${String(v)}`;
+        }).join('\n');
+      }
+
+      return Object.keys(obj).map(k => {
+        const val = obj[k];
+        if (val === null || val === undefined) return `${pad}${k}: ${String(val)}`;
+        if (typeof val === 'object') return `${pad}${k}:\n${formatDataAsText(val, indent+1)}`;
+        return `${pad}${k}: ${String(val)}`;
+      }).join('\n');
+    }
+
     document.getElementById('formUnirse').addEventListener('submit', async e => {
       e.preventDefault();
-       const nombre = e.target.nombre.value.trim();
-      if (!nombre) return alert("Escribe tu nombre");
-       nombreJugadorGlobal = nombre;
+      const nombre = e.target.nombre.value.trim();
+      if (!nombre) return alert('Escribe tu nombre');
+      nombreJugadorGlobal = nombre;
       try {
         const res = await fetch(`/unirse-partida?nombre=${encodeURIComponent(nombre)}`);
         const data = await res.json();
-        if (!data.ok) throw new Error(data.error || "Error al unirse");
+        if (!data.ok) throw new Error(data.error || 'Error al unirse');
 
-        // Guardar ID en el input oculto
         jugadorIdInput.value = data.id;
         jugadorTexto.innerText = `Jugador: ${data.jugador}`;
-        
-        // Cambiar de vista
         inicio.style.display = 'none';
         partida.style.display = 'block';
 
-        // Mostrar estado inicial
         actualizarEstado();
-        iniciarAutoRefresco()
+        iniciarAutoRefresco();
       } catch (err) {
         alert(err.message);
       }
     });
-    // Arranca el intervalo cuando se une a la partida
-        function iniciarAutoRefresco() {
-          if (intervaloEstado) clearInterval(intervaloEstado);
-          intervaloEstado = setInterval(actualizarEstado, 200); 
+
+    function iniciarAutoRefresco() {
+      if (intervaloEstado) clearInterval(intervaloEstado);
+      intervaloEstado = setInterval(actualizarEstado, 500);
+    }
+    function detenerAutoRefresco() { if (intervaloEstado) { clearInterval(intervaloEstado); intervaloEstado = null; } }
+
+    async function actualizarEstado() {
+      try {
+        const estadoRes = await fetch('/estado-partida');
+        const estadoData = await estadoRes.json();
+        if (estadoData.reiniciando) { location.reload(); return; }
+
+        const id = jugadorIdInput.value;
+        const res = await fetch(`/estado?id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+
+        if (data.reload) { alert('La partida se reinició. Se recargará la página...'); location.reload(); return; }
+
+        if (data.mensaje) {
+          mensajeFinalDiv.textContent = String(data.mensaje);
+          mensajeFinalDiv.style.display = 'block';
+          return;
+        } else {
+          mensajeFinalDiv.style.display = 'none';
         }
 
-        // Lo detiene (por ejemplo al reiniciar)
-        function detenerAutoRefresco() {
-          if (intervaloEstado) {
-            clearInterval(intervaloEstado);
-            intervaloEstado = null;
-          }
-        }
-    // Función para actualizar estado del juego
-   async function actualizarEstado() {
-  try {
-    //  Verificar si se está reiniciando
-    const estadoRes = await fetch('/estado-partida');
-    const estadoData = await estadoRes.json();
 
-    if (estadoData.reiniciando) {
-      console.log("Reiniciando partida...");
-      location.reload();
-      return;
-    }
+        const formatted = formatDataAsText(data);
+        let turno = '';
+        if (data.jugador_activo) turno = `\n\nTurno de: ${data.jugador_activo}`;
+        estadoText.textContent = formatted + turno;
 
-    //  Consultar estado general del juego
-    const id = jugadorIdInput.value;
-    const res = await fetch(`/estado?id=${encodeURIComponent(id)}`);
-    const data = await res.json();
-
-    //  Si se debe recargar
-    if (data.reload) {
-      alert("La partida se reinició. Se recargará la página...");
-      location.reload();
-      return;
-    }
-
-    //  Si hay mensaje final (del crupier o sistema)
-    
-    if (data.mensaje) {
-      console.log("Mensaje final recibido desde /estado");
-      const mensajeFinalDiv = document.getElementById('mensajeFinal');
-      mensajeFinalDiv.innerText = data.mensaje;
-      mensajeFinalDiv.style.display = 'block';
-      return; // No seguimos actualizando otras partes (opcional)
-    }
-
-    // 5️⃣ Actualizar visualización general del estado
-    estado.innerHTML = `
-      <pre>${JSON.stringify(data, null, 2)}</pre>
-      <p><strong>Turno de:</strong> ${data.jugador_activo}</p>
-    `;
-
-  } catch (err) {
-    console.error("Error al actualizar estado:", err);
-  }
-}
-    async function reiniciarPartida(nombreJugador) {
-      detenerAutoRefresco();
-      const res = await fetch(`/reiniciar-partida?nombre=${encodeURIComponent(nombreJugador)}`, {
-        method: 'POST'
-      });
-      const data = await res.json();
-      alert(data.msg || data.error);
-      if (data.ok) {
-        location.reload();
+      } catch (err) {
+        console.error('Error al actualizar estado:', err);
+        estadoText.textContent = 'No se pudo obtener el estado: ' + (err.message || String(err));
       }
     }
 
-    // Botones
-      document.getElementById('btnPedir').onclick = async () => {
-        const id = jugadorIdInput.value;
-        try {
-          const res = await fetch(`/accion?accion=pedir&id=${encodeURIComponent(id)}`);
-          const data = await res.json();
+    async function reiniciarPartida(nombreJugador) {
+      detenerAutoRefresco();
+      try {
+        const res = await fetch(`/reiniciar-partida?nombre=${encodeURIComponent(nombreJugador)}`, { method: 'POST' });
+        const data = await res.json();
+        alert(data.msg || data.error || 'Respuesta inesperada');
+        if (data.ok) location.reload();
+      } catch (err) {
+        alert('Error al reiniciar: ' + err.message);
+      }
+    }
 
-          if (!res.ok) throw new Error(data.error || "Error al ejecutar acción");
-          actualizarEstado();
-        } catch (err) {
-          alert(err.message);
-        }
-      };
-      document.getElementById('btnReiniciar').onclick = async () => {
-        reiniciarPartida(nombreJugadorGlobal);
+    document.getElementById('btnPedir').onclick = async () => {
+      const id = jugadorIdInput.value;
+      try {
+        const res = await fetch(`/accion?accion=pedir&id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        // Mostrar solo texto de respuesta si existe
+        if (data.msg) alert(String(data.msg));
+        else if (data.error) alert(String(data.error));
         actualizarEstado();
-      };
+      } catch (err) { alert(err.message); }
+    };
 
-
-      document.getElementById('btnPlantar').onclick = async () => {
-        const id = jugadorIdInput.value;
-        try {
-          const res = await fetch(`/accion?accion=plantar&id=${encodeURIComponent(id)}`);
-          const data = await res.json();
-          if (data.mensaje) {
-            console.log("se paso por aqui")
-            const mensajeFinalDiv = document.getElementById('mensajeFinal');
-            mensajeFinalDiv.innerText = data.mensaje;
-            mensajeFinalDiv.style.display = 'block';
-          }
-
-          if (!res.ok) throw new Error(data.error || "Error al ejecutar acción");
-          actualizarEstado();
-        } catch (err) {
-          alert(err.message);
+    document.getElementById('btnPlantar').onclick = async () => {
+      const id = jugadorIdInput.value;
+      try {
+        const res = await fetch(`/accion?accion=plantar&id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (data.mensaje) {
+          mensajeFinalDiv.textContent = String(data.mensaje);
+          mensajeFinalDiv.style.display = 'block';
         }
-        
+        if (data.msg) alert(String(data.msg));
+        else if (data.error) alert(String(data.error));
+        actualizarEstado();
+      } catch (err) { alert(err.message); }
+    };
 
-      };
-      document.getElementById('btnIniciar').onclick = async () => {
+    document.getElementById('btnIniciar').onclick = async () => {
+      try {
         const res = await fetch('/iniciar-partida');
         const data = await res.json();
-        alert(data.msg || data.error);
+        alert(data.msg || data.error || 'Iniciado');
         actualizarEstado();
-      };
+      } catch (err) { alert(err.message); }
+    };
 
+    document.getElementById('btnReiniciar').onclick = async () => {
+      reiniciarPartida(nombreJugadorGlobal);
+      actualizarEstado();
+    };
 
   </script>
 </body>
