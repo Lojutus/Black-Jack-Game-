@@ -12,7 +12,7 @@ Santiago Torres Martínez - 2521423
 */
 int main() {
     std::cout << "=== Bienvenido al juego de Blackjack ===\n";
-    // Creamos un jeugo
+    // Creamos un juego
     ControladorJuego juego;
     // Crear jugador
     std::string nombre;
