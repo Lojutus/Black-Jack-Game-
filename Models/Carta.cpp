@@ -16,7 +16,7 @@ std::string Carta::getPalo() const {
     return palo;
 }
 
-std::string Carta::mostrar() const {
+std::string Carta::mostrar() const { // Funcion destinada para mostrar a carta 
     std::ostringstream salida;
     salida << nombre << " de " << palo;
     return salida.str();

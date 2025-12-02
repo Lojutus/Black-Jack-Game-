@@ -1,231 +1,387 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Blackjack</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blackjack — Partida (animada)</title>
   <style>
-    :root{--bg:#0f1724;--card:#0b1320;--muted:#9aa7b2;--accent:#ffd166;--glass:rgba(255,255,255,0.03)}
-    html,body{height:100%}
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-      background: linear-gradient(180deg,#071020 0%, #071826 60%);
-      color:#e6eef6;
-      display:flex;align-items:flex-start;justify-content:center;
-      padding:28px;box-sizing:border-box;margin:0;
-    }
-    .container{width:100%;max-width:900px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-    h1{margin:0;font-size:28px;letter-spacing:0.4px}
-    .sub{color:var(--muted);font-size:13px}
+    :root{--bg:#0b1020;--card:#ffffff;--muted:#aab3c8;--accent:#ffd166;--danger:#ff6b6b}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, Arial;background:linear-gradient(180deg,#071022 0%, #0b1330 100%);color:#e6eef8}
+    .app{max-width:1200px;margin:24px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between}
+    h1{margin:0;font-size:20px}
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:var(--accent);border:none;padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--muted)}
 
-    .card{background:linear-gradient(180deg,var(--card), rgba(6,12,20,0.7));padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,12,0.6);}
-    #inicio .card, #partida .card{margin-bottom:14px}
+    .game{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:18px}
+    .table{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;min-height:420px;position:relative;overflow:hidden}
 
-    form label{display:block;color:var(--muted);margin-bottom:8px}
-    input[name="nombre"]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit}
+    .deck{position:absolute;right:18px;top:18px;width:90px;height:120px;display:flex;align-items:center;justify-content:center}
+    .card-back{width:84px;height:118px;border-radius:8px;background:linear-gradient(135deg,#1b2a44,#233657);box-shadow:0 8px 30px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
 
-    .controls{margin-top:12px}
-    button{
-      background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--accent);padding:8px 12px;border-radius:8px;margin-right:8px;cursor:pointer;transition:all .15s ease;
-    }
-    button:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.4)}
-    button.ghost{background:transparent;color:var(--muted);border-color:rgba(255,255,255,0.04)}
+    .players{display:flex;flex-direction:column;gap:16px}
+    .player{display:flex;align-items:center;gap:12px}
+    .player .slot{min-width:220px;min-height:80px;background:rgba(255,255,255,0.02);border-radius:10px;padding:10px;display:flex;flex-direction:column;justify-content:center}
+    .player .name{font-weight:700}
+    .player .hand{display:flex;gap:8px;margin-top:8px;min-height:56px}
 
-    #partida{display:none;margin-top:16px}
-    #jugador{font-weight:600;color:#fff}
+    /* realistic card face */
+    .table{ min-height:480px; position:relative; overflow:hidden; }
 
-    .estado-card{white-space:pre-line;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;margin-top:12px;color:var(--muted);font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace}
+    .players{ display:flex; flex-direction:column; gap:14px; padding-bottom:120px; /* evitar solapado con overlay */ }
 
-    #mensajeFinal{display:none;margin-top:12px;padding:10px;border-radius:8px;background:#072129;color:#b9f3e4}
+    .flying{ position:absolute; will-change:transform,opacity; transition:transform 550ms cubic-bezier(.2,.9,.3,1),opacity 400ms; z-index:200; }
+
+    .card{ z-index:60; /* cartas por debajo del overlay */ }
+
+    #confetti{ position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:1200; }
+
+    .bigResult{ position:absolute; left:50%; top:35%; transform:translate(-50%,-50%); z-index:1500; /* muy arriba */ }
+
+    .card{width:72px;height:104px;border-radius:10px;background:#fff;color:#111;display:flex;flex-direction:column;justify-content:space-between;padding:8px;font-weight:700;box-shadow:0 8px 30px rgba(2,6,23,0.6);transform-origin:center;position:relative}
+    .card .corner{font-size:14px;line-height:1}
+    .card .corner.bottom{transform:rotate(180deg);}
+    .card .suit-center{font-size:26px;line-height:1;text-align:center;display:block}
+    .card.red{color:#b22222}
+    .card.hidden{background:linear-gradient(135deg,#22324a,#173046);color:transparent;display:flex;align-items:center;justify-content:center}
+    .card.hidden::after{content:"";position:absolute;inset:8px;border-radius:6px;background:repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 6px, rgba(255,255,255,0.0) 6px 12px);} 
+
+    /* animation helpers */
+    .flying{position:absolute;z-index:200;will-change:transform,opacity;transition:transform 550ms cubic-bezier(.2,.9,.3,1),opacity 400ms}
+    .glow{box-shadow:0 0 18px rgba(255,209,102,0.34),0 6px 26px rgba(0,0,0,0.6)}
+    .pop{animation:popUp 420ms cubic-bezier(.2,.9,.3,1)}
+
+    .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px}
+    .log{height:260px;overflow:auto;background:rgba(0,0,0,0.12);padding:8px;border-radius:8px;font-family:monospace;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+    .log-entry{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.01);font-size:13px}
+    .log-entry.crupier{background:linear-gradient(90deg, rgba(255,209,102,0.08), rgba(255,255,255,0.02));border-left:4px solid var(--accent);font-size:16px;font-weight:900;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.45);transform-origin:left;animation:crupierPop 420ms cubic-bezier(.2,.9,.3,1)}
+
+    @keyframes crupierPop{0%{transform:scale(.95);opacity:0}60%{transform:scale(1.02);opacity:1}100%{transform:scale(1)}}
+
+    .bigResult{position:absolute;left:50%;top:35%;transform:translate(-50%,-50%);padding:22px 28px;border-radius:20px;background:linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.45));font-size:26px;font-weight:900;color:var(--accent);display:none;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+
+    /* confetti canvas overlay */
+    #confetti{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 
     footer{margin-top:18px;color:var(--muted);font-size:13px}
+
+    @keyframes popUp{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="app">
     <header>
-      <div>
-        <h1>Blackjack</h1>
-        <div class="sub">Juego de cartas</div>
+      <h1>Blackjack</h1>
+      <div class="controls">
+        <input id="nameInput" placeholder="Tu nombre" />
+        <button id="joinBtn" class="btn">Unirse</button>
+        <button id="startBtn" class="btn secondary">Iniciar partida</button>
+        <button id="newBtn" class="btn secondary">Nueva ronda</button>
       </div>
     </header>
 
-    <div id="inicio" class="card">
-      <form id="formUnirse">
-        <label>Tu nombre:
-          <input name="nombre" required autocomplete="name" />
-        </label>
-        <div class="controls">
-          <button type="submit">Unirse a la partida</button>
+    <div class="game">
+      <div class="table">
+        <div class="deck" id="deck">
+          <div class="card-back">DECK</div>
         </div>
-      </form>
-    </div>
 
-    <div id="mensajeFinal" class="card" ></div>
-
-    <div id="partida">
-      <div class="card">
-        <h2 style="margin-top:0;margin-bottom:6px">Partida en curso</h2>
-        <p id="jugador"></p>
-        <input type="hidden" id="jugadorId" />
-        <div id="estadoText" class="estado-card">Estado del juego aparecerá aquí...</div>
-
-        <div class="controls" style="margin-top:12px">
-          <button id="btnPedir">Pedir</button>
-          <button id="btnPlantar">Plantar</button>
-          <button id="btnIniciar" class="ghost">Iniciar Partida</button>
-          <button id="btnReiniciar" class="ghost">Reiniciar Partida</button>
+        <div style="position:relative;z-index:1">
+          <div class="players" id="players"></div>
         </div>
+
+        
       </div>
+
+      <aside class="sidebar">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <div style="flex:1;display:flex;gap:8px">
+            <button id="hitBtn" class="btn">Pedir</button>
+            <button id="standBtn" class="btn">Plantar</button>
+          </div>
+          <div style="min-width:100px;text-align:right;color:var(--muted)">Player ID:<br/><span id="playerIdSmall">-</span></div>
+        </div>
+
+        <div class="log" id="log"></div>
+        
+      </aside>
     </div>
-
-    
   </div>
+  <div class="bigResult" id="bigResult"></div>
+  <canvas id="confetti"></canvas>
 
-  <script>
-    const inicio = document.getElementById('inicio');
-    const partida = document.getElementById('partida');
-    const estadoText = document.getElementById('estadoText');
-    const mensajeFinalDiv = document.getElementById('mensajeFinal');
-    const jugadorTexto = document.getElementById('jugador');
-    const jugadorIdInput = document.getElementById('jugadorId');
-    let nombreJugadorGlobal = "";
-    let intervaloEstado = null;
+<script>
+/* ---------- Config ---------- */
+const API = '';
+let userId = localStorage.getItem('bj_user_id') || null;
+let playerId = null;
+let lastState = null;
+let polling = null;
 
-    function formatDataAsText(obj, indent = 0) {
-      const pad = '  '.repeat(indent);
-      if (obj === null || obj === undefined) return pad + String(obj);
-      if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return pad + String(obj);
-      if (Array.isArray(obj)) {
-        if (obj.length === 0) return pad + '[]';
-        return obj.map((v, i) => {
-          if (typeof v === 'object') return pad + `- ${formatDataAsText(v, indent+1).trim()}`;
-          return pad + `- ${String(v)}`;
-        }).join('\n');
-      }
+/* Append to log. If type==='crupier' the entry uses larger dramatic style. */
+function appendLog(msg, type = 'info'){
+  const container = document.getElementById('log');
+  const el = document.createElement('div');
+  el.className = 'log-entry' + (type === 'crupier' ? ' crupier' : '');
+  // Estilizar mensajes del servidor
+  if(type === 'crupier') {
+    el.innerHTML = '<span style="color:var(--accent);font-weight:bold;">CRUPIER:</span> <span style="color:#fff;">' + msg + '</span>';
+  } else {
+    el.innerHTML = '<span style="color:var(--muted);">' + msg + '</span>';
+  }
+  container.prepend(el);
+}
 
-      return Object.keys(obj).map(k => {
-        const val = obj[k];
-        if (val === null || val === undefined) return `${pad}${k}: ${String(val)}`;
-        if (typeof val === 'object') return `${pad}${k}:\n${formatDataAsText(val, indent+1)}`;
-        return `${pad}${k}: ${String(val)}`;
-      }).join('\n');
+/* Create server-side user (cookie) if needed */
+async function createUserIfNeeded(){
+  if(userId) return userId;
+  try{
+    const r = await fetch(API + '/crear-usuario', {credentials:'include'});
+    const j = await r.json();
+    if(j.user_id){ localStorage.setItem('bj_user_id', j.user_id); userId = j.user_id; appendLog('Usuario creado: ' + userId); }
+    return userId;
+  }catch(e){ appendLog('Error creando usuario: '+e); }
+}
+
+/* ---------- UI wiring ---------- */
+document.getElementById('joinBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('nameInput').value.trim();
+  if(!name) { alert('Escribe un nombre'); return; }
+  await createUserIfNeeded();
+  try{
+    const r = await fetch(API + '/unirse-partida?nombre=' + encodeURIComponent(name), {credentials:'include'});
+    const j = await r.json();
+    if(j.ok){ playerId = j.id; document.getElementById('playerIdSmall').innerText = playerId; appendLog('Te uniste como: ' + j.jugador); startPolling(); renderNotice('Bienvenido '+name); }
+    else{ alert(j.error || JSON.stringify(j)); }
+  }catch(e){ appendLog('Error unirse: '+e); }
+});
+
+document.getElementById('startBtn').addEventListener('click', async ()=>{
+  await createUserIfNeeded();
+  const r = await fetch(API + '/iniciar-partida');
+  const j = await r.json();
+  if(j.ok){ appendLog('Partida iniciada'); }
+  else appendLog('start error: ' + JSON.stringify(j));
+});
+
+
+document.getElementById('newBtn').addEventListener('click', async ()=>{
+  const r = await fetch(API + '/nueva-partida');
+  const j = await r.json();
+  appendLog('nueva-partida -> ' + JSON.stringify(j));
+  lastState = null;
+});
+
+/* Actions */
+document.getElementById('hitBtn').addEventListener('click', async ()=>{ if(!playerId){ alert('Unete a la partida primero'); return;} await accion('pedir'); });
+document.getElementById('standBtn').addEventListener('click', async ()=>{ if(!playerId){ alert('Unete a la partida primero'); return;} await accion('plantar'); });
+
+async function accion(act){
+  try{
+    const r = await fetch(API + '/accion?accion=' + act + '&id=' + encodeURIComponent(playerId));
+    if(r.status === 409){ appendLog('Servidor pide reload (reiniciando partida)'); return; }
+    const j = await r.json();
+    appendLog('/accion -> ' + JSON.stringify(j));
+    if(j.mensaje){ renderRoundResult(j.mensaje); appendLog(j.mensaje, 'crupier'); }
+    await fetchEstadoOnce();
+  }catch(e){ appendLog('accion error: '+e); }
+}
+
+/* ---------- Polling / estado handling ---------- */
+function startPolling(){ if(polling) return; polling = setInterval(fetchEstadoOnce, 900); fetchEstadoOnce(); }
+function stopPolling(){ if(polling){ clearInterval(polling); polling = null; } }
+
+async function fetchEstadoOnce(){
+  try{
+    const r = await fetch(API + '/estado');
+    if(r.status === 409){ appendLog('Estado: reiniciando partida'); lastState = null; return; }
+    const j = await r.json();
+    if(j.reload){ appendLog('server requested reload'); lastState = null; return; }
+    if(j.mensaje){ appendLog(j.mensaje, 'crupier'); renderRoundResult(j.mensaje); lastState = null; return; }
+    // Actualiza la vista en todas las ventanas abiertas
+    renderFullState(j);
+    handleState(j);
+  }catch(e){ appendLog('fetch estado error: '+e); }
+}
+
+function handleState(state){
+  if(!lastState){ renderFullState(state); lastState = state; return; }
+
+  // If crupier visible hand changed -> dramatic log entry
+  try{
+    if(state.mano_visible_crupier && state.mano_visible_crupier !== lastState.mano_visible_crupier){
+      appendLog(String(state.mano_visible_crupier), 'crupier');
     }
+  }catch(e){}
 
-    document.getElementById('formUnirse').addEventListener('submit', async e => {
-      e.preventDefault();
-      const nombre = e.target.nombre.value.trim();
-      if (!nombre) return alert('Escribe tu nombre');
-      nombreJugadorGlobal = nombre;
-      try {
-        const res = await fetch(`/unirse-partida?nombre=${encodeURIComponent(nombre)}`);
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Error al unirse');
+  if(state.jugador_activo !== lastState.jugador_activo){ highlightActive(state.jugador_activo); }
 
-        jugadorIdInput.value = data.id;
-        jugadorTexto.innerText = `Jugador: ${data.jugador}`;
-        inicio.style.display = 'none';
-        partida.style.display = 'block';
-
-        actualizarEstado();
-        iniciarAutoRefresco();
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-
-    function iniciarAutoRefresco() {
-      if (intervaloEstado) clearInterval(intervaloEstado);
-      intervaloEstado = setInterval(actualizarEstado, 500);
+  try{
+    const prevHands = normalizeHands(lastState.manos_jugadores || []);
+    const curHands = normalizeHands(state.manos_jugadores || []);
+    for(let i=0;i<curHands.length;i++){
+      const prev = prevHands[i] || [];
+      const cur = curHands[i] || [];
+      if(cur.length > prev.length){ dealCardToPlayer(i, cur[cur.length-1]); }
     }
-    function detenerAutoRefresco() { if (intervaloEstado) { clearInterval(intervaloEstado); intervaloEstado = null; } }
+  }catch(e){}
 
-    async function actualizarEstado() {
-      try {
-        const estadoRes = await fetch('/estado-partida');
-        const estadoData = await estadoRes.json();
-        if (estadoData.reiniciando) { location.reload(); return; }
+  lastState = state;
+}
 
-        const id = jugadorIdInput.value;
-        const res = await fetch(`/estado?id=${encodeURIComponent(id)}`);
-        const data = await res.json();
+/* ---------- Render / Cards ---------- */
+// ...existing code...
 
-        if (data.reload) { alert('La partida se reinició. Se recargará la página...'); location.reload(); return; }
+/* Accepts many server formats: array, string 'player 0 [A♥, 10♣] => 21' or tokens */
+function normalizeHands(hands){
+  if(!hands) return [];
+  if(typeof hands === 'string'){
+    try{ hands = JSON.parse(hands); }catch(e){ /* keep as string */ }
+  }
+  if(!Array.isArray(hands)) return [];
+  return hands.map(h => splitCardsFromString(h));
+}
+/* Normalize a single hand string (used for crupier visible hand) */
+function normalizeSingleHand(h){
+  if(!h) return [];
+  if(Array.isArray(h)) return h.map(String);
+  // quitar prefijo tipo "player 0 " si existe
+  let s = String(h);
+  const mPrefix = s.match(/^player\s*\d+\s*/i);
+  if(mPrefix) s = s.substring(mPrefix[0].length);
+  // extraer entre corchetes si existe
+  const li = s.indexOf('[');
+  const ri = s.indexOf(']');
+  if(li !== -1 && ri !== -1 && ri>li){
+    return s.substring(li+1, ri).split(',').map(t=>String(t).trim()).filter(Boolean);
+  }
+  // fallback: tokens con palos o formato AH 10C
+  return s.split(/\s+/).filter(Boolean).filter(tok=> /[♥♦♣♠]/.test(tok) || /[0-9AJQK]+[CDHS]?$/.test(tok)).map(normalizeCardToken);
+}
 
-        if (data.mensaje) {
-          mensajeFinalDiv.textContent = String(data.mensaje);
-          mensajeFinalDiv.style.display = 'block';
-          return;
-        } else {
-          mensajeFinalDiv.style.display = 'none';
-        }
+function splitCardsFromString(s){
+  if(!s) return [];
+  if(Array.isArray(s)) return s.map(x=>String(x).trim()).filter(Boolean);
+  let str = String(s);
+  // quitar prefijo "player N " si existe
+  const prefix = str.match(/^player\s*\d+\s*/i);
+  if(prefix) str = str.substring(prefix[0].length);
+
+  const li = str.indexOf('[');
+  const ri = str.indexOf(']');
+  if(li !== -1 && ri !== -1 && ri>li){
+    return str.substring(li+1, ri).split(',').map(t=>String(t).trim()).filter(Boolean);
+  }
+  // fallback: tokens with suits or AH 10C etc
+  const tokens = str.split(/\s+/).filter(Boolean);
+  const cards = tokens.filter(tok => /[♥♦♣♠]/.test(tok) || /[0-9AJQK]+[CDHS]?$/.test(tok));
+  return cards.map(normalizeCardToken);
+}
+function renderFullState(state){
+  const container = document.getElementById('players'); container.innerHTML = '';
+
+  // --- Render crupier visible card(s) primero ---
+  const crupierHand = normalizeSingleHand(state.mano_visible_crupier);
+  const dealerSlot = document.createElement('div'); dealerSlot.className = 'player';
+  const dealerInner = document.createElement('div'); dealerInner.className = 'slot';
+  const dealerName = document.createElement('div'); dealerName.className = 'name'; dealerName.innerText = 'Crupier';
+  const dealerHandEl = document.createElement('div'); dealerHandEl.className = 'hand'; dealerHandEl.id = 'hand-crupier';
+  crupierHand.forEach(c=> dealerHandEl.appendChild(makeCardEl(c)));
+  dealerInner.appendChild(dealerName); dealerInner.appendChild(dealerHandEl); dealerSlot.appendChild(dealerInner);
+  container.appendChild(dealerSlot);
+
+  // --- Render jugadores ---
+  const parsedHands = normalizeHands(state.manos_jugadores || []);
+  for(let i=0;i<parsedHands.length;i++){
+    const p = document.createElement('div'); p.className = 'player';
+    const slot = document.createElement('div'); slot.className = 'slot';
+    const name = document.createElement('div'); name.className='name'; name.innerText = 'Jugador ' + i;
+    const hand = document.createElement('div'); hand.className = 'hand'; hand.id = 'hand-' + i;
+    parsedHands[i].forEach(c=>{ hand.appendChild(makeCardEl(c)); });
+    slot.appendChild(name); slot.appendChild(hand); p.appendChild(slot); container.appendChild(p);
+  }
+  highlightActive(state.jugador_activo);
+}
 
 
-        const formatted = formatDataAsText(data);
-        let turno = '';
-        if (data.jugador_activo) turno = `\n\nTurno de: ${data.jugador_activo}`;
-        estadoText.textContent = formatted + turno;
+function normalizeCardToken(tok){
+  let t = String(tok).trim();
+  t = t.replace(/H/g,'♥').replace(/D/g,'♦').replace(/C/g,'♣').replace(/S/g,'♠');
+  return t;
+}
 
-      } catch (err) {
-        console.error('Error al actualizar estado:', err);
-        estadoText.textContent = 'No se pudo obtener el estado: ' + (err.message || String(err));
-      }
-    }
+/* Build a card DOM element with rank and suit */
+function makeCardEl(token){
+  const card = document.createElement('div');
+  card.className = 'card';
+  const t = String(token || '').trim();
+  if(/hidden|X|\*/i.test(t)){
+    card.classList.add('hidden');
+    return card;
+  }
+  const m = t.match(/^([0-9]+|A|J|Q|K)\s*([♥♦♣♠])?$/i);
+  let rank = t, suit = '';
+  if(m){ rank = m[1]; suit = m[2] || ''; } else {
+    const last = t.slice(-1);
+    if(/[♥♦♣♠]/.test(last)){ rank = t.slice(0,-1); suit = last; }
+  }
+  const isRed = suit === '♥' || suit === '♦';
+  if(isRed) card.classList.add('red');
+  const top = document.createElement('div'); top.className = 'corner top'; top.innerHTML = `<span class="corner-rank">${rank}</span> <span class="corner-suit">${suit}</span>`;
+  const center = document.createElement('div'); center.className = 'suit-center'; center.innerText = suit || '';
+  const bottom = document.createElement('div'); bottom.className = 'corner bottom'; bottom.innerHTML = `<span class="corner-rank">${rank}</span> <span class="corner-suit">${suit}</span>`;
+  card.appendChild(top); card.appendChild(center); card.appendChild(bottom);
+  return card;
+}
 
-    async function reiniciarPartida(nombreJugador) {
-      detenerAutoRefresco();
-      try {
-        const res = await fetch(`/reiniciar-partida?nombre=${encodeURIComponent(nombreJugador)}`, { method: 'POST' });
-        const data = await res.json();
-        alert(data.msg || data.error || 'Respuesta inesperada');
-        if (data.ok) location.reload();
-      } catch (err) {
-        alert('Error al reiniciar: ' + err.message);
-      }
-    }
+/* Animate card flying from deck to player's hand */
+function dealCardToPlayer(index, cardName){
+  const deck = document.getElementById('deck');
+  const hand = document.getElementById('hand-' + index);
+  if(!hand){ fetchEstadoOnce(); return; }
+  const deckRect = deck.getBoundingClientRect();
+  const handRect = hand.getBoundingClientRect();
+  const fly = makeCardEl(cardName);
+  fly.classList.add('flying');
+  fly.style.position = 'absolute';
+  fly.style.left = (deckRect.left + window.scrollX) + 'px';
+  fly.style.top = (deckRect.top + window.scrollY) + 'px';
+  fly.style.width = '72px'; fly.style.height='104px';
+  document.body.appendChild(fly);
+  const targetX = handRect.left + window.scrollX + Math.min(hand.children.length, 6) * 78;
+  const targetY = handRect.top + window.scrollY + 6;
+  requestAnimationFrame(()=>{ fly.style.transform = `translate(${targetX - deckRect.left}px, ${targetY - deckRect.top}px)`; fly.style.opacity = '1'; });
+  setTimeout(()=>{ hand.appendChild(makeCardEl(cardName)); fly.remove(); glow(hand); }, 620);
+}
 
-    document.getElementById('btnPedir').onclick = async () => {
-      const id = jugadorIdInput.value;
-      try {
-        const res = await fetch(`/accion?accion=pedir&id=${encodeURIComponent(id)}`);
-        const data = await res.json();
-        // Mostrar solo texto de respuesta si existe
-        if (data.msg) alert(String(data.msg));
-        else if (data.error) alert(String(data.error));
-        actualizarEstado();
-      } catch (err) { alert(err.message); }
-    };
+function glow(el){ el.classList.add('glow'); setTimeout(()=>el.classList.remove('glow'),700); }
+function highlightActive(name){ const slots = document.querySelectorAll('.player .slot'); slots.forEach(s=> s.style.border = ''); if(!name) return; for(const s of slots){ if(String(s.innerText).indexOf(name)!==-1 || String(s.innerText).indexOf(String(name).split(' ')[0])!==-1){ s.style.border = '2px solid rgba(255,209,102,0.18)'; s.classList.add('pop'); setTimeout(()=>s.classList.remove('pop'),420); } } }
 
-    document.getElementById('btnPlantar').onclick = async () => {
-      const id = jugadorIdInput.value;
-      try {
-        const res = await fetch(`/accion?accion=plantar&id=${encodeURIComponent(id)}`);
-        const data = await res.json();
-        if (data.mensaje) {
-          mensajeFinalDiv.textContent = String(data.mensaje);
-          mensajeFinalDiv.style.display = 'block';
-        }
-        if (data.msg) alert(String(data.msg));
-        else if (data.error) alert(String(data.error));
-        actualizarEstado();
-      } catch (err) { alert(err.message); }
-    };
+function renderRoundResult(msg){
+  const el = document.getElementById('bigResult');
+  el.innerText = msg;
+  el.style.display = 'block';
+  // Elimina la animación y el ocultamiento automático
+  // confettiBurst();
+  // setTimeout(()=>{ el.style.display='none'; }, 3500);
+  appendLog(msg, 'crupier');
+}
+function renderNotice(msg){ const el = document.getElementById('bigResult'); el.innerText = msg; el.style.display='block'; setTimeout(()=>el.style.display='none',1600); }
 
-    document.getElementById('btnIniciar').onclick = async () => {
-      try {
-        const res = await fetch('/iniciar-partida');
-        const data = await res.json();
-        alert(data.msg || data.error || 'Iniciado');
-        actualizarEstado();
-      } catch (err) { alert(err.message); }
-    };
+/* ---------- Confetti ---------- */
+const confettiCanvas = document.getElementById('confetti');
+const cc = confettiCanvas.getContext && confettiCanvas.getContext('2d');
+function fitCanvas(){ if(!confettiCanvas) return; confettiCanvas.width = confettiCanvas.clientWidth; confettiCanvas.height = confettiCanvas.clientHeight; }
+window.addEventListener('resize', fitCanvas); fitCanvas();
+let confettiParticles = [];
+function confettiBurst(){ if(!cc) return; const n = 40; for(let i=0;i<n;i++){ confettiParticles.push({x:Math.random()*confettiCanvas.width, y: -10, vx:(Math.random()-0.5)*6, vy:Math.random()*5+2, size: 4+Math.random()*6, life: 80+Math.random()*80, color: `hsl(${Math.floor(Math.random()*360)},80%,60%)`}); } runConfetti(); }
+let confettiAnimating = false;
+function runConfetti(){ if(confettiAnimating) return; confettiAnimating = true; (function step(){ cc.clearRect(0,0,confettiCanvas.width, confettiCanvas.height); for(let p of confettiParticles){ p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life--; cc.fillStyle = p.color; cc.fillRect(p.x, p.y, p.size, p.size); } confettiParticles = confettiParticles.filter(p=>p.life>0 && p.y < confettiCanvas.height+50); if(confettiParticles.length>0){ requestAnimationFrame(step); } else { confettiAnimating = false; } })(); }
 
-    document.getElementById('btnReiniciar').onclick = async () => {
-      reiniciarPartida(nombreJugadorGlobal);
-      actualizarEstado();
-    };
-
-  </script>
+/* boot */
+createUserIfNeeded();
+</script>
 </body>
 </html>
