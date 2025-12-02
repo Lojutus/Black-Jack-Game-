@@ -15,7 +15,7 @@ Juego::Juego() : partidaActiva(false) {}
 Mazo& Juego::getMazo(){
     return mazo;
 }
-Jugador& Juego::getJugador(int indice){
+Jugador& Juego::getJugador(int indice){ // devuelve el jugador actualmente activo
     if (jugadores.empty()) {
         throw std::out_of_range("No hay jugadores registrados.");
     }
@@ -24,11 +24,11 @@ Jugador& Juego::getJugador(int indice){
     }
     throw std::out_of_range("Índice de jugador fuera de rango.");
 }
-void Juego::addJugador(const Jugador& jugador) {
+void Juego::addJugador(const Jugador& jugador) { // añade un jugador al juego
     jugadores.push_back(jugador);
 }
 
-void Juego::iniciarPartida() {
+void Juego::iniciarPartida() { // inicia una nueva partida
     if (jugadores.empty()) {
         std::cout << "No hay jugadores registrados.\n";
         return;
@@ -44,7 +44,7 @@ void Juego::iniciarPartida() {
 
     
 }
-std::vector<int> Juego::puntajesJugadores(){
+std::vector<int> Juego::puntajesJugadores(){ // devuelve un vector con los puntajes de todos los jugadores
     std::vector<int> resultado;
     for( auto jugador : jugadores){
         resultado.push_back(jugador.getValorMano());
@@ -52,7 +52,7 @@ std::vector<int> Juego::puntajesJugadores(){
     return resultado;
 }
 
-std::string Juego::evaluarRonda() {
+std::string Juego::evaluarRonda() { // evalúa la ronda actual y devuelve un resumen de resultados
     std::string resultado = "";
     for (auto& jugador : jugadores) {
         
@@ -62,17 +62,18 @@ std::string Juego::evaluarRonda() {
     
 }
 
-void Juego::pagoVictoria(Jugador& jugador) {
+void Juego::pagoVictoria(Jugador& jugador) {// dice cuanto gana el jugador
     // Lógica de pago (simplificada)
     if (jugador.getValorMano() <= 21)
         std::cout << jugador.getNombre() << " gana $" << jugador.getApuesta() * 2 << "\n";
 }
 
-void Juego::nuevaPartida() {
+void Juego::nuevaPartida() { // borra a todos los jugadoires
     for (auto& jugador : jugadores) {
         jugador.nuevaMano();
     }
     nuevaMano();
+    terminarJuego(); // PARA LA VERCION WEB SE DEJA ASI, SE BORRAN LOS JUGADORES
     partidaActiva = false;
 }
 
