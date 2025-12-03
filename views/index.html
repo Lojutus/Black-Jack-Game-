@@ -167,11 +167,12 @@ document.getElementById('startBtn').addEventListener('click', async ()=>{
 });
 
 
-document.getElementById('newBtn').addEventListener('click', async ()=>{
+document.getElementById('newBtn').addEventListener('click', async () => {
   const r = await fetch(API + '/nueva-partida');
   const j = await r.json();
   appendLog('nueva-partida -> ' + JSON.stringify(j));
   lastState = null;
+  location.reload(); // Reinicia la página al iniciar una nueva ronda
 });
 
 /* Actions */
@@ -232,8 +233,6 @@ function handleState(state){
 }
 
 /* ---------- Render / Cards ---------- */
-// ...existing code...
-
 /* Accepts many server formats: array, string 'player 0 [A♥, 10♣] => 21' or tokens */
 function normalizeHands(hands){
   if(!hands) return [];
