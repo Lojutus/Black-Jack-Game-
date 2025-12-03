@@ -1,6 +1,6 @@
 #include "ControladorJuego.h"
 #include "../Models/Jugador.h"
-#include "../Views/MostrarInformacion.h"
+#include "../views/MostrarInformacion.h"
 #include <iostream>
 
 ControladorJuego::ControladorJuego(){
@@ -83,4 +83,5 @@ bool ControladorJuego::cambiarJugador(){
         return 0;
     }
     
+
 }
