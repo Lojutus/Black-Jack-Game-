@@ -2,7 +2,13 @@
 #include "web.h"
 #include "httplib.h"
 #include <iostream>
+/*
 
+    Proyecto: BlackJack
+    Curso: Fundamentos de Programación Orientada a Objetos (FPOO)
+    Universidad del Valle
+    Repositorio: https://github.com/Lojutus/Black-Jack-Game-.git
+*/
 int main() {
     try
     {
@@ -23,4 +29,5 @@ int main() {
 }
 
    
+
 
