@@ -1,18 +1,18 @@
 #include "Carta.h"
 #include <sstream>
 
-Carta::Carta(const std::string& nombre, const std::string& palo, int valor)
+Carta::Carta(const std::string& nombre, const std::string& palo, int valor) //Constructor
     : nombre(nombre), palo(palo), valor(valor) {}
 
-int Carta::getValor() const {
+int Carta::getValor() const {  // Funcion destinada para obtener el valor de la carta
     return valor;
 }
 
-std::string Carta::getNombre() const {
+std::string Carta::getNombre() const {  // Funcion destinada para obtener el nombre de la carta
     return nombre;
 }
 
-std::string Carta::getPalo() const {
+std::string Carta::getPalo() const {  // Funcion destinada para obtener el palo de la carta
     return palo;
 }
 

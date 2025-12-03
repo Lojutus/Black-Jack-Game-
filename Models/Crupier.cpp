@@ -45,7 +45,7 @@ bool Crupier::tieneAsBlando(const Mano& mano) {
     // Si sigue habiendo un As valiendo 11, es blando
     return (ases > 0 && valor <= 21);
 }
-
+//Funcion que determina el ganador entre el crupier y un jugador
 std::string Crupier::determinarGanador(Jugador& jugador) {
     int valorJugador = jugador.getValorMano();
     int valorCrupier = mano.calcularValor();
@@ -53,26 +53,29 @@ std::string Crupier::determinarGanador(Jugador& jugador) {
     std::cout << "\nResultado final:\n";
     std::cout << jugador.getNombre() << ": " << valorJugador << " | Crupier: " << valorCrupier << std::endl;
     resultado = resultado + jugador.getNombre() + ": " + std::to_string(valorJugador) + " | Crupier: " + std::to_string(valorCrupier) +  "\n";
+   //Determina el ganador si el valor del jugador es mayor a 21
     if (valorJugador > 21) {
         std::cout << "El jugador se pasa. Pierde la apuesta.\n";
         resultado =+ "El jugador " + jugador.getNombre() +  " se pasa. Pierde la apuesta.\n";
     } else if (valorCrupier > 21 || valorJugador > valorCrupier) {
         std::cout << "El jugador gana!\n";
         resultado =+  "El jugador "+ jugador.getNombre() +  " gana!\n";
+    //Determina el empate si el valor del jugador es igual al valor del crupier
     } else if (valorJugador == valorCrupier) {
         std::cout << "Empate. Se devuelve la apuesta. "+ jugador.getNombre() +" \n";
         resultado =+ "Empate. Se devuelve la apuesta. "+ jugador.getNombre() +" \n";
-    } else {
+    } else { //de lo contrario gana el crupier
         std::cout << "El crupier gana a "+ jugador.getNombre() +" . \n";
         resultado = resultado + "El crupier gana.\n";
     }
     return resultado;
 }
+//Funcion que implementa la logica de juego del crupier
 std::string Crupier::jugar(Mazo& mazo){
     std::string respuesta =  "El crupier comienza su turno...\n";
      std::cout << "El crupier comienza su turno...\n";
     
-    while (true) {
+    while (true) { //mientras el crupier no se plante o pase de 21 
         int valor = mano.calcularValor();
         bool blando = tieneAsBlando(mano);
         respuesta =  respuesta + "Crupier tiene: " + mano.mostrar()
@@ -100,7 +103,7 @@ std::string Crupier::jugar(Mazo& mazo){
             }
         }
 
-        if (!pedir) {
+        if (!pedir) { // Plantarse
             respuesta =  respuesta + "Crupier se planta con " +  std::to_string(valor)+ ".\n"; 
 
             std::cout << "Crupier se planta con " << valor << ".\n";

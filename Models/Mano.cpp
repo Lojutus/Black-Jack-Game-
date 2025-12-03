@@ -3,11 +3,11 @@
 
 
 
-void Mano::agregarCarta(const Carta& carta) {
+void Mano::agregarCarta(const Carta& carta) { //constrctor
     cartas.push_back(carta);
 }
 
-int Mano::calcularValor() const {
+int Mano::calcularValor() const { //Funcion para calcular el valor de la mano
     int total = 0;
     int ases = 0;
 
@@ -25,11 +25,11 @@ int Mano::calcularValor() const {
     return total;
 }
 
-const std::vector<Carta>& Mano::getCartas() const {
+const std::vector<Carta>& Mano::getCartas() const { //Vector de cartas
     return cartas;
 }
 
-std::string Mano::mostrar() const {
+std::string Mano::mostrar() const { //Funcion para mostrar las cartas en la mano
     std::ostringstream salida;
     for (const auto& carta : cartas) {
         salida << carta.mostrar() << " | ";
@@ -37,10 +37,10 @@ std::string Mano::mostrar() const {
     return salida.str();
 }
 
-std::size_t Mano::getCantidad() const {
+std::size_t Mano::getCantidad() const { //Funcion para obtener la cantidad de cartas en la mano
     return cartas.size();
 }
 
-void Mano::vaciar() {
+void Mano::vaciar() { //Funcion para vaciar la mano
     cartas.clear();
 }

@@ -1,6 +1,6 @@
 #include "ControladorJuego.h"
 #include "../Models/Jugador.h"
-#include "../views/MostrarInformacion.h"
+#include "../Views/MostrarInformacion.h"
 #include <iostream>
 
 ControladorJuego::ControladorJuego(){

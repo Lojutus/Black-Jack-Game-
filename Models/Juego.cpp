@@ -77,12 +77,12 @@ void Juego::nuevaPartida() { // borra a todos los jugadoires
     partidaActiva = false;
 }
 
-void Juego::terminarJuego() {
+void Juego::terminarJuego() { // termina el juego y borra a los jugadores
     jugadores.clear();
     partidaActiva = false;
     std::cout << "Juego terminado.\n";
 }
 
-std::vector<Jugador>& Juego::getJugadores(){
+std::vector<Jugador>& Juego::getJugadores(){ // devuelve la lista de jugadores
     return jugadores;
 }

@@ -8,12 +8,12 @@ Mazo::Mazo() {
     reiniciar();
 }
 
-void Mazo::barajar() {
+void Mazo::barajar() { //Funcion para barajar las cartasy que sean aleatorias
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
     std::shuffle(cartas.begin(), cartas.end(), std::default_random_engine(std::rand()));
 }
 
-Carta Mazo::repartirCarta() {
+Carta Mazo::repartirCarta() { //Funcion para repartir una carta del mazo a la mano del jugador
     if (cartas.empty()) {
         reiniciar();
         barajar();
@@ -24,11 +24,11 @@ Carta Mazo::repartirCarta() {
     return carta;
 }
 
-int Mazo::cartasRestantes() const {
+int Mazo::cartasRestantes() const { //Funcion para saber cuantas cartas quedan en el mazo
     return static_cast<int>(cartas.size());
 }
 
-void Mazo::reiniciar() {
+void Mazo::reiniciar() { //Funcion para reiniciar el mazo con las 52 cartas
     cartas.clear();
     std::vector<std::string> palos = {"Corazones", "Diamantes", "Tréboles", "Picas"};
     std::vector<std::string> nombres = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
