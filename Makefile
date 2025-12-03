@@ -24,11 +24,12 @@ clean:
 
 # GoogleTest build
 TEST_BIN = test_runner
-TEST_SRC = tests/test_main.cpp
-TEST_DEPS = ClaseA.cpp 
+TEST_SRC = $(shell find ./tests -name '*.cpp')
+TEST_DEPS = $(shell find ./Models -name '*.cpp')
 
 google-test: $(TEST_BIN)
 	./$(TEST_BIN)
 
 $(TEST_BIN): $(TEST_SRC) $(TEST_DEPS)
+
 	$(CXX) $(CXXFLAGS) -o $@ $(TEST_SRC) $(TEST_DEPS) -lgtest -lgtest_main $(LDFLAGS)
