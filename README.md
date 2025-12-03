@@ -1,55 +1,7 @@
 ## BLACKJACK C++
 
-## 🔹 Descripcion basica del proyecto
+## Funcionamiento
 
-Rellenar
-
-## Funcionamiento:
-
-ControladorJuego tiene:
-
-un juego
-
-Juego hereda de crupier y tiene:
-
-un vector de jugadores
-
-un mazo
-
-
-
-Mazo tiene:
-
-muchas cartas
-
-jugador tiene:
-
-una sola mano
-
-mano tiene : 
-
-un vector de cartas relacionadas con el mazo
-
-
-¿Como se ejecuta la partida?
-
-Controladorjuego instancia un juego 
-
-
-La clase juego, añade los jugadores 
-
-iniciar partida de clase juego hace :
-
-
-le reparte a cada jugador dos carta y al crupier tambien
-
-usa los metodos de la claseCrupier para barajar el mazo 
-
-de acuerdo al orden que tiene los jugadores se le pide a Controlador juego que reciba la orden de cada uno
-
-si alguien no a perdido se llama al algoritmo de crumpier , para que intente ganar al jugador que aun no pierde
-
-se llama a determinar ganador al final de cada ronda y se le dice que gano 
 ## Clase: Carta
 **Archivo:** `Carta.cpp`
 
@@ -338,3 +290,4 @@ estando en la carpeta raíz del proyecto
 sudo chown -R $(whoami):$(whoami) .
 sudo chmod -R u+rw .
 ```
+
